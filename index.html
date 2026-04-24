@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APavan-OrçaMestre Pro · SINAPI/SC 03/2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d1117;--surface:#161b22;--surface2:#21262d;--border:#30363d;--border2:#3d444d;--text:#e6edf3;--text2:#7d8590;--text3:#484f58;--accent:#f0b429;--blue:#388bfd;--green:#3fb950;--red:#f85149;--cap1:#e85d00;--cap2:#1f6feb;--cap3:#bc8cff;--cap4:#f0b429;--cap5:#3fb950;--cap6:#ff6b9d;--cap7:#56d364;--cap8:#60c5f1;}
+  *{box-sizing:border-box;margin:0;padding:0;}html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;padding-bottom:90px;}
+  ::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:34px;height:34px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .logo-text{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:-.5px;text-transform:uppercase;}
+  .logo-sub{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+  .header-total{text-align:right;}
+  .header-total-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;}
+  .header-total-value{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);transition:all .2s;}
+  .nav-tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 12px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;position:sticky;top:62px;z-index:99;}
+  .nav-tabs::-webkit-scrollbar{display:none;}
+  .tab-btn{padding:12px 12px;border:none;background:transparent;color:var(--text2);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s;}
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn span.dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:4px;vertical-align:middle;margin-top:-2px;}
+  .main{max-width:900px;margin:0 auto;padding:20px 14px;}
+  .chapter{margin-bottom:26px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .chapter-header{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);}
+  .chapter-title{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:8px;}
+  .chapter-accent{width:4px;height:16px;border-radius:2px;}
+  .chapter-badge{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;background:var(--surface2);padding:2px 7px;border-radius:4px;border:1px solid var(--border);}
+  .chapter-subtotal{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text2);}
+  .chapter-total-wrap{display:flex;align-items:center;gap:7px;}
+  .subchapter{border-bottom:1px solid var(--border);}
+  .subchapter:last-child{border-bottom:none;}
+  .subchapter-title{padding:9px 18px;font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;background:var(--surface2);border-bottom:1px solid var(--border);}
+  .item-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);background:var(--bg);transition:background .15s;}
+  .item-row:hover{background:var(--surface);}
+  .item-row:last-child{border-bottom:none;}
+  .item-codigo{font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;color:var(--text3);margin-bottom:2px;}
+  .item-desc{font-size:12px;font-weight:500;color:var(--text);line-height:1.3;margin-bottom:2px;}
+  .item-price{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--blue);}
+  .item-controls{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .qty-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+  .qty-label{font-size:8px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+  .qty-input{width:92px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:6px 9px;text-align:right;outline:none;transition:all .15s;}
+  .qty-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(240,180,41,.1);}
+  .qty-input::placeholder{color:var(--text3);}
+  .qty-input::-webkit-inner-spin-button{display:none;}
+  .subtotal-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:1px;min-width:98px;}
+  .subtotal-label{font-size:8px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+  .subtotal-value{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text3);transition:color .2s;text-align:right;}
+  .subtotal-value.active{color:var(--accent);}
+  .add-item-btn{margin:9px 18px;width:calc(100% - 36px);padding:8px;background:transparent;border:1px dashed var(--border2);border-radius:6px;color:var(--text3);font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .add-item-btn:hover{background:var(--surface2);border-color:var(--blue);color:var(--blue);}
+  .cub-info-bar{background:linear-gradient(135deg,rgba(96,197,241,.07),rgba(240,180,41,.04));border:1px solid rgba(96,197,241,.18);border-radius:7px;padding:11px 15px;margin:12px 18px 0;display:flex;align-items:flex-start;gap:10px;}
+  .cub-icon{font-size:20px;flex-shrink:0;margin-top:1px;}
+  .cub-info-text{font-size:10px;color:var(--text2);line-height:1.6;}
+  .cub-info-text strong{color:var(--cap8);font-weight:700;}
+  .cub-badge{display:inline-block;background:rgba(96,197,241,.12);color:var(--cap8);border:1px solid rgba(96,197,241,.25);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;padding:1px 5px;margin-right:3px;}
+  .bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;z-index:200;}
+  .bar-count{font-size:12px;font-weight:600;color:var(--text2);}
+  .bar-count strong{color:var(--text);}
+  .bar-total-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+  .bar-actions{display:flex;gap:7px;align-items:center;}
+  .btn-reset{padding:8px 14px;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;}
+  .btn-reset:hover{border-color:var(--red);color:var(--red);}
+  .btn-export{padding:9px 18px;background:var(--accent);border:none;border-radius:6px;color:#0d1117;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;}
+  .btn-export:hover{background:#f5c54a;transform:translateY(-1px);}
+  .btn-excel{padding:9px 16px;background:transparent;border:1.5px solid #3fb950;border-radius:6px;color:#3fb950;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
+  .btn-excel:hover{background:rgba(63,185,80,.12);transform:translateY(-1px);}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:300;backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:14px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:100%;max-width:620px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;}
+  .modal-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .modal-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+  .modal-close{width:28px;height:28px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;}
+  .modal-close:hover{background:var(--red);color:white;border-color:var(--red);}
+  .modal-search-wrap{padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .modal-search{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;padding:8px 11px;outline:none;transition:border-color .15s;}
+  .modal-search:focus{border-color:var(--accent);}
+  .modal-search::placeholder{color:var(--text3);}
+  .modal-list{flex:1;overflow-y:auto;padding:9px;}
+  .search-item{padding:9px 11px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--bg);transition:all .15s;}
+  .search-item:hover{border-color:var(--border2);background:var(--surface2);}
+  .search-item-code{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);font-weight:700;margin-bottom:2px;}
+  .search-item-desc{font-size:11px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:370px;}
+  .search-item-price{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--blue);}
+  .btn-add-item{padding:6px 12px;background:var(--blue);border:none;border-radius:5px;color:white;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;flex-shrink:0;transition:all .15s;}
+  .btn-add-item:hover{background:#58a6ff;}
+  .btn-delete{width:26px;height:26px;background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text3);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;padding:0;opacity:.35;}
+  .item-row:hover .btn-delete{opacity:1;}
+  .btn-delete:hover{background:rgba(248,81,73,.12);border-color:var(--red);color:var(--red);opacity:1;}
+  @keyframes slideOut{0%{opacity:1;transform:scaleY(1);max-height:100px;}100%{opacity:0;transform:scaleY(0);max-height:0;padding:0;margin:0;}}
+  .modal-footer{padding:9px 20px;border-top:1px solid var(--border);text-align:center;font-size:9px;color:var(--text3);font-weight:600;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;}
+  .empty-state{text-align:center;padding:30px 20px;color:var(--text3);font-size:12px;}
+  .toast{position:fixed;top:74px;right:13px;background:var(--red);color:white;padding:8px 14px;border-radius:6px;font-size:11px;font-weight:600;z-index:500;transform:translateX(130%);transition:transform .3s;}
+  .toast.show{transform:translateX(0);}
+  .toast.ok{background:var(--green);}
+  @keyframes flash{0%{background:rgba(56,139,253,.2);}100%{background:transparent;}}
+  .flash{animation:flash 1.5s ease-out;}
+  @media(max-width:600px){.item-row{grid-template-columns:1fr;}.item-controls{justify-content:space-between;}.header-total{display:none;}}
+</style>
+<script src="banco.js"></script>
+
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🏗</div>
+    <div>
+      <div class="logo-text">APavan-OrçaMestre Pro</div>
+      <div class="logo-sub">SINAPI + CUB · Florianópolis/SC · 03/2026</div>
+    </div>
+  </div>
+  <div class="header-total">
+    <div class="header-total-label">Total da Obra</div>
+    <div class="header-total-value" id="total-geral">R$ 0,00</div>
+  </div>
+</header>
+<nav class="nav-tabs" id="nav-tabs"></nav>
+<main class="main" id="main-content"></main>
+<div class="bottom-bar">
+  <div>
+    <div class="bar-count" id="bar-count">Nenhum item quantificado</div>
+    <div class="bar-total-label">Orçamento Ativo</div>
+  </div>
+  <div class="bar-actions">
+    <button class="btn-reset" onclick="limparTudo()">Reiniciar</button>
+    <button class="btn-excel" onclick="exportarExcel()">📊 Excel</button>
+    <button class="btn-export" onclick="exportarPDF()">📄 PDF</button>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-busca">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Adicionar Item SINAPI/CEF</div>
+      <button class="modal-close" onclick="fecharBusca()">×</button>
+    </div>
+    <div class="modal-search-wrap">
+      <input type="text" class="modal-search" id="input-busca" placeholder="Busque por código ou descrição…" oninput="filtrarBusca()">
+    </div>
+    <div class="modal-list" id="lista-busca"></div>
+    <div class="modal-footer" id="modal-footer-count">SINAPI/SC – Desonerado – 03/2026 · carregando…</div>
+  </div>
+</div>
+
+<script>
+/* ======== SINAPI/SC 03/2026 – PREÇOS VERIFICADOS NO PDF OFICIAL ======== */
+const SINAPI=[
+  {c:'001379',d:'Cimento Portland composto CP II-32',u:'kg',p:0.86},
+  {c:'000370',d:'Areia média – jazida/fornecedor (sem transporte)',u:'m³',p:160.00},
+  {c:'000366',d:'Areia fina – jazida/fornecedor (sem transporte)',u:'m³',p:160.00},
+  {c:'000367',d:'Areia grossa – jazida/fornecedor (sem transporte)',u:'m³',p:162.09},
+  {c:'004721',d:'Pedra britada nº 1 (9,5–19 mm) – posto pedreira',u:'m³',p:111.91},
+  {c:'004718',d:'Pedra britada nº 2 (19–38 mm) – posto pedreira',u:'m³',p:112.50},
+  {c:'004730',d:'Pedra de mão / rachão para arrimo/fundação',u:'m³',p:105.19},
+  {c:'001106',d:'Cal hidratada CH-I para argamassas',u:'kg',p:0.96},
+  {c:'000032',d:'Aço CA-50, 6,3 mm, vergalhão',u:'kg',p:7.74},
+  {c:'000033',d:'Aço CA-50, 8,0 mm, vergalhão',u:'kg',p:7.79},
+  {c:'000034',d:'Aço CA-50, 10,0 mm, vergalhão',u:'kg',p:7.34},
+  {c:'043055',d:'Aço CA-50, 12,5 mm ou 16,0 mm, vergalhão',u:'kg',p:6.36},
+  {c:'000123',d:'Aditivo impermeabilizante de pega normal para argamassas',u:'l',p:5.65},
+  {c:'045146',d:'Aditivo impermeabilizante cristalizante para concreto',u:'kg',p:26.48},
+  {c:'000626',d:'Manta líquida de base asfáltica elastomérica',u:'kg',p:23.16},
+  {c:'000135',d:'Argamassa polimérica impermeabilizante semiflexível, bicomponente',u:'kg',p:2.59},
+  {c:'000124',d:'Aditivo acelerador de pega e endurecimento para argamassas',u:'l',p:13.81},
+  {c:'000140',d:'Impermeabilizante flexível branco de base acrílica para cobertura',u:'kg',p:14.85},
+  {c:'000151',d:'Impermeabilizante incolor base silicone para fachada',u:'l',p:21.92},
+  {c:'000650',d:'Bloco de vedação de concreto 9×19×39 cm – Classe C (NBR 6136)',u:'un',p:3.60},
+  {c:'000271',d:'Bloco cerâmico 8 furos 9×19×19 cm (vedação)',u:'un',p:1.09},
+  {c:'034556',d:'Bloco de concreto estrutural 14×19×29 cm – fBK 10 MPa',u:'un',p:5.58},
+  {c:'034566',d:'Bloco de concreto estrutural 14×19×29 cm – fBK 6 MPa',u:'un',p:4.88},
+  {c:'034567',d:'Bloco de concreto estrutural 14×19×29 cm – fBK 8 MPa',u:'un',p:5.17},
+  {c:'004430',d:'Caibro não aparelhado 5×6 cm – Maçaranduba/Massaranduba',u:'m',p:32.00},
+  {c:'004433',d:'Caibro não aparelhado 6×6 cm – Maçaranduba/Massaranduba',u:'m',p:62.58},
+  {c:'004408',d:'Ripa não aparelhada 1,5×5 cm – Maçaranduba/Massaranduba',u:'m',p:6.09},
+  {c:'004412',d:'Ripa não aparelhada 1×3 cm – Maçaranduba/Massaranduba',u:'m',p:4.88},
+  {c:'040741',d:'Telha de concreto tipo clássica cor cinza, comp. 42 cm',u:'un',p:3.73},
+  {c:'040742',d:'Cumeeira para telha de concreto (2 águas) cor cinza',u:'un',p:13.46},
+  {c:'007245',d:'Telha de vidro tipo francesa 39×23 cm',u:'un',p:30.22},
+  {c:'001014',d:'Cabo de cobre flexível 450/750V – 2,5 mm²',u:'m',p:2.63},
+  {c:'000981',d:'Cabo de cobre flexível 450/750V – 4,0 mm²',u:'m',p:4.36},
+  {c:'002689',d:'Eletroduto PVC flexível corrugado amarelo 20 mm',u:'m',p:2.42},
+  {c:'002688',d:'Eletroduto PVC flexível corrugado amarelo 25 mm',u:'m',p:2.62},
+  {c:'002690',d:'Eletroduto PVC flexível corrugado amarelo 32 mm',u:'m',p:4.48},
+  {c:'034653',d:'Disjuntor termomagético trilho DIN (IEC), monopolar, 6–32 A',u:'un',p:8.45},
+  {c:'002370',d:'Disjuntor tipo NEMA, monopolar 10–30 A',u:'un',p:10.95},
+  {c:'039797',d:'Quadro de distribuição PVC embutir, 18–24 disjuntores DIN',u:'un',p:213.17},
+  {c:'007528',d:'Tomada 2P+T 10A 250V conjunto montado para embutir 4"×2"',u:'un',p:10.40},
+  {c:'038112',d:'Interruptor simples 10A 250V (apenas módulo)',u:'un',p:7.78},
+  {c:'038069',d:'Interruptor simples + interruptor paralelo 10A – conjunto embutir',u:'un',p:17.71},
+  {c:'038194',d:'Lâmpada LED 10 W bivolt branca – base E27',u:'un',p:5.50},
+  {c:'000393',d:'Abraçadeira em aço para eletrodutos tipo D, 1/2"',u:'un',p:1.25},
+  {c:'009836',d:'Tubo PVC série normal DN 100 mm – esgoto predial (NBR 5688)',u:'m',p:14.99},
+  {c:'009838',d:'Tubo PVC série normal DN 50 mm – esgoto predial (NBR 5688)',u:'m',p:10.81},
+  {c:'009835',d:'Tubo PVC série normal DN 40 mm – esgoto predial (NBR 5688)',u:'m',p:6.55},
+  {c:'009837',d:'Tubo PVC série normal DN 75 mm – esgoto predial (NBR 5688)',u:'m',p:14.19},
+  {c:'036274',d:'Tubo PPR PN 20, DN 20 mm – água quente predial',u:'m',p:11.30},
+  {c:'000119',d:'Adesivo plástico para PVC, bisnaga 75 g',u:'un',p:10.53},
+  {c:'006038',d:'Registro de pressão PVC roscável volante simples 1/2"',u:'un',p:6.67},
+  {c:'011718',d:'Registro de pressão PVC roscável volante simples 3/4"',u:'un',p:19.02},
+  {c:'000303',d:'Anel de borracha para tubo PVC esgoto DN 100 mm',u:'un',p:3.23},
+  {c:'010422',d:'Bacia sanitária com caixa acoplada, sifão aparente, louça branca',u:'un',p:388.79},
+  {c:'010228',d:'Válvula de descarga metálica cromada, base 1½"',u:'un',p:263.00},
+  {c:'006136',d:'Sifão em metal cromado para pia ou lavatório 1×1½"',u:'un',p:192.60},
+  {c:'013415',d:'Torneira de mesa/bancada para lavatório, fixa, metálica cromada',u:'un',p:99.90},
+  {c:'001368',d:'Chuveiro comum plástico branco, 3 temperaturas, 5500 W',u:'un',p:89.90},
+  {c:'011690',d:'Tanque simples em mármore sintético – fixar na parede (22 L)',u:'un',p:192.08},
+  {c:'037589',d:'Tanque simples em mármore sintético com coluna',u:'un',p:361.57},
+  {c:'045190',d:'Piso em porcelanato retificado liso, acetinado/polido',u:'m²',p:59.13},
+  {c:'001287',d:'Piso em cerâmica esmaltada PEI ≥ 4 (< 2025 cm²)',u:'m²',p:28.67},
+  {c:'010840',d:'Piso em granito polido tipo Amendoa/Amarelo Capri',u:'m²',p:490.00},
+  {c:'039829',d:'Rodapé em poliestireno branco H=5 cm, E=1,5 cm',u:'m',p:24.20},
+  {c:'043146',d:'Endurecedor mineral de base cimentícia para piso de concreto',u:'kg',p:6.95},
+  {c:'007356',d:'Tinta látex acrílica premium – cor branco fosco',u:'l',p:28.50},
+  {c:'035692',d:'Tinta látex acrílica standard – cor branca',u:'l',p:18.65},
+  {c:'035693',d:'Tinta látex acrílica econômica – cor branca',u:'l',p:11.89},
+  {c:'043624',d:'Tinta látex acrílica super premium – cor branco fosco',u:'l',p:34.74},
+  {c:'043626',d:'Massa corrida para superfícies de ambientes internos',u:'kg',p:3.84},
+  {c:'007342',d:'Tinta mineral impermeável em pó, branca',u:'kg',p:2.83},
+  {c:'004917',d:'Porta de abrir em alumínio tipo veneziana – anodizado',u:'m²',p:780.69},
+  {c:'036896',d:'Janela de correr alumínio perfil 25 – 100×120 cm (2 folhas)',u:'un',p:453.68},
+  {c:'034367',d:'Janela de correr alumínio perfil 25 – 100×150 cm (2 folhas)',u:'un',p:584.72},
+  {c:'034364',d:'Janela de correr alumínio perfil 25 – 120×150 cm (4 folhas)',u:'un',p:768.60},
+  {c:'000183',d:'Batente/marco em madeira maciça com rebaixo – 60 a 80 cm',u:'jg',p:215.00},
+  {c:'000184',d:'Batente/marco em madeira maciça com rebaixo – 90 a 100 cm',u:'jg',p:133.16},
+  {c:'002418',d:'Dobradiça em aço/ferro 3"×2½" E=1,2–1,8 mm, sem anel',u:'un',p:18.00},
+  {c:'002432',d:'Dobradiça em aço/ferro 3½"×3" E=1,9–2 mm, com anel',u:'un',p:38.80},
+  {c:'012895',d:'Capacete de segurança aba frontal (Classe B)',u:'un',p:15.47},
+  {c:'012869',d:'Telhador/Telhadista (hora trabalhada)',u:'h',p:29.91},
+];
+
+/* ======== CUB/SC – SINDUSCON-Fpolis – NBR 12721/2006 – 03/2026 ======== */
+/* Média Residencial: R$ 3.028,45/m² (+0,30% em mar/26) – Fonte SINDUSCON-SC */
+const CUB={
+  'CUB-R1B':{c:'CUB-R1B',d:'R1-B  Residencial Unifamiliar – Baixo Padrão (1 pavimento)',u:'m²',p:2440.00},
+  'CUB-R1N':{c:'CUB-R1N',d:'R1-N  Residencial Unifamiliar – Padrão Normal (1 pavimento)',u:'m²',p:2838.00},
+  'CUB-R1A':{c:'CUB-R1A',d:'R1-A  Residencial Unifamiliar – Alto Padrão (1 pavimento)',u:'m²',p:3782.00},
+  'CUB-R4B':{c:'CUB-R4B',d:'R4-B  Residencial Multifamiliar – Baixo Padrão (4 pav.)',u:'m²',p:2498.00},
+  'CUB-R4N':{c:'CUB-R4N',d:'R4-N  Residencial Multifamiliar – Padrão Normal (4 pav.)',u:'m²',p:3010.00},
+  'CUB-R4A':{c:'CUB-R4A',d:'R4-A  Residencial Multifamiliar – Alto Padrão (4 pav.)',u:'m²',p:3856.00},
+  'CUB-R8B':{c:'CUB-R8B',d:'R8-B  Residencial Multifamiliar – Baixo Padrão (8 pav.)',u:'m²',p:2565.00},
+  'CUB-R8N':{c:'CUB-R8N',d:'R8-N  Residencial Multifamiliar – Padrão Normal (8 pav.)',u:'m²',p:3188.00},
+  'CUB-R8A':{c:'CUB-R8A',d:'R8-A  Residencial Multifamiliar – Alto Padrão (8 pav.)',u:'m²',p:4074.00},
+  'CUB-PIS':{c:'CUB-PIS',d:'PIS   Projeto de Interesse Social',u:'m²',p:1618.00},
+  'CUB-PP': {c:'CUB-PP', d:'PP-4  Prédio Popular (4 pavimentos)',u:'m²',p:2184.00},
+  'CUB-RP1Q':{c:'CUB-RP1Q',d:'RP1Q  Residência Popular Térrea (quartos)',u:'m²',p:1382.00},
+  'CUB-CAL8':{c:'CUB-CAL8',d:'CAL-8   Comercial Andar Livre (8 pavimentos)',u:'m²',p:3112.00},
+  'CUB-CSL8':{c:'CUB-CSL8',d:'CSL-8   Comercial Salas e Lojas (8 pavimentos)',u:'m²',p:2998.00},
+  'CUB-CSL16':{c:'CUB-CSL16',d:'CSL-16  Comercial Salas e Lojas (16 pavimentos)',u:'m²',p:3228.00},
+  'CUB-GI': {c:'CUB-GI', d:'GI      Galpão Industrial',u:'m²',p:1558.00},
+};
+
+/* ======== CHAPTERS ======== */
+const CHAPTERS=[
+  {id:'cap-fundacao',cor:'var(--cap1)',titulo:'1. Fundação e Infraestrutura',
+   subs:[
+    {nome:'Agregados e Cimento',itens:[]},
+    {nome:'Armação e Impermeabilização',itens:[]}
+  ]},
+  {id:'cap-estrutura',cor:'var(--cap2)',titulo:'2. Estrutura',
+   subs:[
+    {nome:'Concreto e Armação',itens:[]}
+  ]},
+  {id:'cap-alvenaria',cor:'var(--cap3)',titulo:'3. Alvenaria',
+   subs:[
+    {nome:'Blocos e Argamassas',itens:[]}
+  ]},
+  {id:'cap-eletrica',cor:'var(--cap4)',titulo:'4. Instalações Elétricas',
+   subs:[
+    {nome:'Condutores e Eletrodutos',itens:[]},
+    {nome:'Dispositivos e Quadros',itens:[]}
+  ]},
+  {id:'cap-hidraulica',cor:'var(--cap5)',titulo:'5. Instalações Hidráulicas',
+   subs:[
+    {nome:'Tubulação e Conexões',itens:[]},
+    {nome:'Louças e Metais Sanitários',itens:[]}
+  ]},
+  {id:'cap-cobertura',cor:'var(--cap6)',titulo:'6. Cobertura',
+   subs:[
+    {nome:'Estrutura de Madeira',itens:[]},
+    {nome:'Telhas e Impermeabilização',itens:[]}
+  ]},
+  {id:'cap-acabamento',cor:'var(--cap7)',titulo:'7. Revestimentos e Acabamentos',
+   subs:[
+    {nome:'Pisos e Revestimentos',itens:[]},
+    {nome:'Pintura e Massa',itens:[]},
+    {nome:'Esquadrias e Ferragens',itens:[]}
+  ]},
+  {id:'cap-cub',cor:'var(--cap8)',titulo:'8. CUB – SC / SINDUSCON-Fpolis',isCUB:true,
+   subs:[
+    {nome:'Residencial Unifamiliar (1 Pavimento)',itens:['CUB-R1B','CUB-R1N','CUB-R1A']},
+    {nome:'Residencial Multifamiliar – 4 Pavimentos',itens:['CUB-R4B','CUB-R4N','CUB-R4A']},
+    {nome:'Residencial Multifamiliar – 8 Pavimentos',itens:['CUB-R8B','CUB-R8N','CUB-R8A']},
+    {nome:'Projetos Sociais e Popular',itens:['CUB-PIS','CUB-PP','CUB-RP1Q']},
+    {nome:'Comercial e Industrial',itens:['CUB-CAL8','CUB-CSL8','CUB-CSL16','CUB-GI']},
+  ]},
+];
+
+/* ======== STATE ======== */
+let orcamento={};
+let chaptersData=JSON.parse(JSON.stringify(CHAPTERS));
+let destinoBusca=null;
+
+function getItem(cod){
+  if(CUB[cod])return CUB[cod];
+  // Busca no array interno (campos curtos c/d/u/p)
+  const local=SINAPI.find(i=>i.c===cod);
+  if(local)return local;
+  // Busca no banco.js (campos: codigo, descricao, unidade, preco) – normaliza para c/d/u/p
+  if(typeof bibliotecaGlobal!=='undefined'){
+    const ext=bibliotecaGlobal.find(i=>i.codigo===cod);
+    if(ext)return{c:ext.codigo,d:ext.descricao,u:ext.unidade,p:ext.preco};
+  }
+  return null;
+}
+
+/* ======== RENDER ======== */
+function init(){renderNav();renderChapters();updateSummary();}
+
+function renderNav(){
+  const nav=document.getElementById('nav-tabs');
+  nav.innerHTML='';
+  chaptersData.forEach(cap=>{
+    const btn=document.createElement('button');
+    btn.className='tab-btn';
+    btn.innerHTML=`<span class="dot" style="background:${cap.cor}"></span>${cap.titulo}`;
+    btn.onclick=()=>scrollToSection(cap.id);
+    nav.appendChild(btn);
+  });
+}
+
+function renderChapters(){
+  const main=document.getElementById('main-content');
+  main.innerHTML='';
+  chaptersData.forEach(cap=>{
+    const section=document.createElement('section');
+    section.id=cap.id;
+    section.className='chapter';
+    const total=calcCapTotal(cap);
+    let subsHtml='';
+    if(cap.isCUB){
+      subsHtml+=`<div class="cub-info-bar"><div class="cub-icon">📐</div><div class="cub-info-text">
+        <strong>CUB/SC – Custo Unitário Básico · SINDUSCON-Fpolis · Março/2026</strong><br>
+        Informe a área construída em m² para estimar o custo total por tipologia de edificação.<br>
+        <span class="cub-badge">Média Res.</span>R$ 3.028,45/m²
+        &nbsp;<span class="cub-badge">Variação</span>+0,30% mar/26 &nbsp;+0,52% ano
+        &nbsp;<span class="cub-badge">Fonte</span>SINDUSCON-SC · NBR 12721/2006
+      </div></div>`;
+    }
+    cap.subs.forEach((sub,si)=>{
+      const itensHtml=sub.itens.map(cod=>{const item=getItem(cod);return item?renderItemHTML(item,cap.id,si):''}).join('');
+      subsHtml+=`<div class="subchapter">
+        <div class="subchapter-title">${sub.nome}</div>
+        <div id="sub-${cap.id}-${si}">${itensHtml}</div>
+        ${!cap.isCUB?`<button class="add-item-btn" onclick="abrirBusca('${cap.id}',${si})">+ Acrescentar item da tabela SINAPI/CEF 03/2026</button>`:''}
+      </div>`;
+    });
+    section.innerHTML=`
+      <div class="chapter-header">
+        <div class="chapter-title"><span class="chapter-accent" style="background:${cap.cor}"></span>${cap.titulo}</div>
+        <div class="chapter-total-wrap">
+          <span class="chapter-badge">${cap.isCUB?'CUB/SINDUSCON-SC':'SINAPI/SC'}</span>
+          <span class="chapter-subtotal" id="ch-total-${cap.id}">${total>0?fmt(total):'—'}</span>
+        </div>
+      </div>${subsHtml}`;
+    main.appendChild(section);
+  });
+}
+
+function renderItemHTML(item,capId,subIdx){
+  const cod=item.c,desc=item.d,unit=item.u,price=item.p;
+  const entry=orcamento[cod];
+  const qty=entry?entry.qtd:'',sub=entry?entry.subtotal:0;
+  const isCUB=cod.startsWith('CUB-');
+  // CUB items são fixos, sem botão de apagar
+  const deleteBtn=(!isCUB&&capId!=null)
+    ?`<button class="btn-delete" title="Remover item" onclick="removerItem('${capId}',${subIdx},'${cod}')">✕</button>`
+    :'';
+  return `<div class="item-row" id="row-${cod}">
+    <div class="item-info">
+      <div class="item-codigo">${cod} · ${isCUB?'CUB SINDUSCON-SC 03/2026':'SINAPI/SC 03/2026 – DESONERADO'}</div>
+      <div class="item-desc">${desc}</div>
+      <div class="item-price">${fmt(price)} / ${unit}</div>
+    </div>
+    <div class="item-controls">
+      <div class="qty-wrap">
+        <span class="qty-label">Qtd. (${unit})</span>
+        <input type="number" class="qty-input" min="0" step="0.01" placeholder="0.00"
+          value="${qty}" oninput="updateItem('${cod}',this.value,${price})">
+      </div>
+      <div class="subtotal-wrap">
+        <span class="subtotal-label">Subtotal</span>
+        <span class="subtotal-value${sub>0?' active':''}" id="sub-${cod}">${sub>0?fmt(sub):'R$ 0,00'}</span>
+      </div>
+      ${deleteBtn}
+    </div>
+  </div>`;
+}
+
+function calcCapTotal(cap){
+  let t=0;
+  cap.subs.forEach(s=>s.itens.forEach(cod=>{if(orcamento[cod])t+=orcamento[cod].subtotal;}));
+  return t;
+}
+
+/* ======== UPDATES ======== */
+function updateItem(cod,value,preco){
+  const qty=parseFloat(value)||0,sub=qty*preco;
+  const item=getItem(cod);
+  if(qty>0) orcamento[cod]={qtd:qty,preco,subtotal:sub,descricao:item?item.d:'Item',unidade:item?item.u:'un'};
+  else delete orcamento[cod];
+  const el=document.getElementById(`sub-${cod}`);
+  if(el){el.textContent=qty>0?fmt(sub):'R$ 0,00';el.className=`subtotal-value${qty>0?' active':''}`;}
+  updateCapTotals();updateSummary();
+}
+
+function updateCapTotals(){
+  chaptersData.forEach(cap=>{
+    const t=calcCapTotal(cap),el=document.getElementById(`ch-total-${cap.id}`);
+    if(el)el.textContent=t>0?fmt(t):'—';
+  });
+}
+
+function updateSummary(){
+  const items=Object.values(orcamento);
+  const total=items.reduce((s,i)=>s+i.subtotal,0),count=items.length;
+  document.getElementById('total-geral').textContent=fmt(total);
+  document.getElementById('bar-count').innerHTML=count>0
+    ?`<strong>${count}</strong> ${count===1?'item quantificado':'itens quantificados'}`
+    :'Nenhum item quantificado';
+}
+
+/* ======== BUSCA ======== */
+function abrirBusca(capId,subIdx){
+  destinoBusca={capId,subIdx};
+  document.getElementById('modal-busca').classList.add('open');
+  document.getElementById('input-busca').value='';
+  filtrarBusca();
+  setTimeout(()=>document.getElementById('input-busca').focus(),80);
+}
+function fecharBusca(){
+  document.getElementById('modal-busca').classList.remove('open');
+  destinoBusca=null;
+}
+function filtrarBusca(){
+  const termo=document.getElementById('input-busca').value.toLowerCase().trim();
+  const lista=document.getElementById('lista-busca');
+  lista.innerHTML='';
+
+  // Usa bibliotecaGlobal do banco.js (campos: codigo, descricao, unidade, preco)
+  const fonte=(typeof bibliotecaGlobal!=='undefined')?bibliotecaGlobal:[];
+  const footer=document.getElementById('modal-footer-count');
+  if(footer)footer.textContent=`SINAPI/SC – Desonerado – 03/2026 · ${fonte.length.toLocaleString('pt-BR')} insumos`;
+
+  if(!termo){
+    lista.innerHTML='<div class="empty-state">🔍 Digite código ou descrição para pesquisar.</div>';
+    return;
+  }
+  const res=fonte.filter(i=>i.codigo.includes(termo)||i.descricao.toLowerCase().includes(termo));
+  if(!res.length){lista.innerHTML='<div class="empty-state">🔍 Nenhum resultado encontrado.</div>';return;}
+  const total=res.length;
+  res.slice(0,60).forEach(item=>{
+    const div=document.createElement('div');
+    div.className='search-item';
+    const codSafe=item.codigo.replace(/'/g,"\\'");
+    div.innerHTML=`<div style="flex:1;min-width:0;">
+      <div class="search-item-code">${item.codigo} · SINAPI/SC 03/2026</div>
+      <div class="search-item-desc">${item.descricao}</div>
+      <div class="search-item-price">${fmt(item.preco)} / ${item.unidade}</div>
+    </div>
+    <button class="btn-add-item" onclick="adicionarItem('${codSafe}')">Adicionar</button>`;
+    lista.appendChild(div);
+  });
+  if(total>60){
+    const aviso=document.createElement('div');
+    aviso.className='empty-state';aviso.style.paddingTop='8px';
+    aviso.textContent=`Exibindo 60 de ${total} resultados. Refine a pesquisa.`;
+    lista.appendChild(aviso);
+  }
+}
+function adicionarItem(cod){
+  if(!destinoBusca)return;
+  const {capId,subIdx}=destinoBusca;
+  const cap=chaptersData.find(c=>c.id===capId);
+  if(!cap)return;
+  const sub=cap.subs[subIdx];
+  if(!sub)return;
+  if(sub.itens.includes(cod)){showToast('Item já adicionado.');return;}
+  sub.itens.push(cod);
+  fecharBusca();renderChapters();updateCapTotals();
+  setTimeout(()=>{
+    const el=document.getElementById(`row-${cod}`);
+    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1500);}
+  },120);
+  showToast('Item adicionado!',true);
+}
+
+function removerItem(capId,subIdx,cod){
+  const cap=chaptersData.find(c=>c.id===capId);
+  if(!cap)return;
+  const sub=cap.subs[subIdx];
+  if(!sub)return;
+
+  // Animação de saída
+  const row=document.getElementById('row-'+cod);
+  if(row){
+    row.style.transition='all .2s ease';
+    row.style.opacity='0';
+    row.style.transform='scaleY(0)';
+    row.style.transformOrigin='top';
+    row.style.maxHeight=row.offsetHeight+'px';
+    row.style.overflow='hidden';
+    setTimeout(()=>{
+      // Remove do state e do capítulo
+      sub.itens=sub.itens.filter(c=>c!==cod);
+      delete orcamento[cod];
+      row.remove();
+      updateCapTotals();
+      updateSummary();
+    },200);
+  } else {
+    sub.itens=sub.itens.filter(c=>c!==cod);
+    delete orcamento[cod];
+    updateCapTotals();
+    updateSummary();
+  }
+}
+
+/* ======== UTILS ======== */
+function fmt(v){return`R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;}
+function scrollToSection(id){const el=document.getElementById(id);if(!el)return;window.scrollTo({top:el.getBoundingClientRect().top+window.pageYOffset-124,behavior:'smooth'});}
+function limparTudo(){if(!confirm('Limpar todos os dados do orçamento?'))return;orcamento={};renderChapters();updateSummary();window.scrollTo({top:0,behavior:'smooth'});}
+function showToast(msg,ok=false){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast${ok?' ok':''} show`;setTimeout(()=>t.className=`toast${ok?' ok':''}`,2400);}
+
+/* ======== EXPORT ======== */
+function exportarPDF(){
+  const items=Object.entries(orcamento);
+  if(!items.length){showToast('Adicione quantidades antes de gerar o relatório.');return;}
+  const total=items.reduce((s,[,i])=>s+i.subtotal,0);
+  const data=new Date().toLocaleDateString('pt-BR');
+  let sections='';
+  chaptersData.forEach(cap=>{
+    let rows='',capTotal=0;
+    cap.subs.forEach(sub=>{
+      sub.itens.forEach(cod=>{
+        const e=orcamento[cod];if(!e)return;
+        const item=getItem(cod);
+        rows+='<tr><td>'+cod+'</td><td>'+(item?item.d:e.descricao)+'</td>'
+          +'<td align="center">'+e.unidade+'</td>'
+          +'<td align="right">'+e.qtd.toLocaleString('pt-BR',{minimumFractionDigits:2})+'</td>'
+          +'<td align="right">'+fmt(e.preco)+'</td>'
+          +'<td align="right"><strong>'+fmt(e.subtotal)+'</strong></td></tr>';
+        capTotal+=e.subtotal;
+      });
+    });
+    if(!rows)return;
+    sections+='<div class="sec">'
+      +'<div class="sec-title">'+cap.titulo+'</div>'
+      +(cap.isCUB?'<div class="cub-note">&#128208; CUB/SC – SINDUSCON-Fpolis – NBR 12721/2006 – 03/2026. Estimativa por m² construído. Não inclui terreno, fundações especiais, projetos, BDI ou taxas.</div>':'')
+      +'<table><thead><tr><th>Código</th><th>Descrição</th><th>Und.</th><th align="right">Qtd.</th><th align="right">P. Unit.</th><th align="right">Subtotal</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table>'
+      +'<div class="sec-total">Subtotal do capítulo: <strong>'+fmt(capTotal)+'</strong></div>'
+      +'</div>';
+  });
+
+  const htmlContent='<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<title>Orçamento – OrçaMestre Pro</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0;}'
+    +'body{font-family:Barlow,sans-serif;color:#1a1a2e;padding:36px;font-size:12px;}'
+    +'.hdr{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1e40af;padding-bottom:14px;margin-bottom:20px;}'
+    +'.doc-title{font-family:"Barlow Condensed",sans-serif;font-size:24px;font-weight:900;color:#1e40af;text-transform:uppercase;}'
+    +'.doc-sub{font-size:9px;font-weight:700;color:#888;letter-spacing:1px;margin-top:3px;text-transform:uppercase;}'
+    +'.doc-meta{text-align:right;font-size:10px;color:#666;font-weight:600;line-height:1.7;}'
+    +'.sec{margin-bottom:22px;}'
+    +'.sec-title{font-family:"Barlow Condensed",sans-serif;font-size:12px;font-weight:900;text-transform:uppercase;border-left:4px solid #1e40af;padding:5px 9px;margin-bottom:6px;background:#f0f4ff;color:#1e3a8a;}'
+    +'.cub-note{background:#fff8e6;border:1px solid #f0b429;border-radius:4px;padding:6px 9px;font-size:9px;color:#7a5c00;margin-bottom:7px;line-height:1.5;}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:3px;}'
+    +'th{background:#f8fafc;font-size:8px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;padding:6px 7px;text-align:left;border-bottom:2px solid #e2e8f0;color:#1e40af;}'
+    +'td{padding:6px 7px;border-bottom:1px solid #f0f0f0;font-size:10px;}'
+    +'tr:nth-child(even) td{background:#fafbff;}'
+    +'.sec-total{text-align:right;font-size:9px;color:#555;padding:4px 7px;border-top:1px solid #dde;}'
+    +'.total-block{border-top:3px solid #1e40af;padding-top:14px;text-align:right;margin-top:16px;}'
+    +'.total-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;}'
+    +'.total-value{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;color:#1e40af;display:block;margin-top:3px;}'
+    +'.note{margin-top:40px;font-size:8px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:10px;line-height:1.6;}'
+    +'@media print{body{padding:20px;}}'
+    +'</style></head><body>'
+    +'<div class="hdr">'
+    +'<div><div class="doc-title">&#127959; Orçamento de Obra</div>'
+    +'<div class="doc-sub">OrçaMestre Pro · SINAPI/SC Desonerado + CUB/SC · 03/2026</div></div>'
+    +'<div class="doc-meta">Emissão: '+data+'<br>Localidade: Florianópolis / SC<br>Bases: SINAPI/CEF + SINDUSCON-SC</div>'
+    +'</div>'
+    +sections
+    +'<div class="total-block">'
+    +'<div class="total-label">Valor Total Estimado da Obra</div>'
+    +'<span class="total-value">'+fmt(total)+'</span>'
+    +'</div>'
+    +'<div class="note">Estimativa orçamentária baseada em índices oficiais SINAPI/CEF (Florianópolis/SC, março/2026, desonerado) e CUB/SC SINDUSCON-Fpolis (NBR 12721/2006, março/2026).<br>'
+    +'Não inclui BDI, projetos executivos, taxas, aprovações, terreno, fundações especiais ou custos indiretos. Não substitui orçamento analítico assinado por responsável técnico habilitado (CREA/CAU).</div>'
+    +'</body></html>';
+
+  // window.open retorna null quando popups estao bloqueados — usa Blob como fallback
+  const win=window.open('','_blank');
+  if(win && win.document){
+    win.document.write(htmlContent);
+    win.document.close();
+    win.setTimeout(()=>win.print(),600);
+  } else {
+    const blob=new Blob([htmlContent],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.target='_blank';a.rel='noopener';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),15000);
+    showToast('Relatório aberto. Libere popups para imprimir direto.',false);
+  }
+}
+
+/* ======== EXPORT EXCEL (sem CDN – geração nativa) ======== */
+function exportarExcel(){
+  try{
+    // ── Valida dados ──────────────────────────────────────────────────────
+    const codigos = Object.keys(orcamento);
+    if(!codigos.length){
+      showToast('Nenhum item quantificado para exportar.');
+      return;
+    }
+
+    // ── Mapa reverso: codigo → capítulo / subcapítulo ─────────────────────
+    const mapaPos = {};
+    chaptersData.forEach(cap => {
+      cap.subs.forEach(sub => {
+        sub.itens.forEach(cod => {
+          mapaPos[cod] = { capitulo: cap.titulo, subcapitulo: sub.nome };
+        });
+      });
+    });
+
+    // ── Agrupa itens por capítulo (ordem dos capítulos) ───────────────────
+    const porCap = {};
+    codigos.forEach(cod => {
+      const pos = mapaPos[cod] || { capitulo: 'Outros', subcapitulo: '' };
+      if(!porCap[pos.capitulo]) porCap[pos.capitulo] = [];
+      porCap[pos.capitulo].push(cod);
+    });
+    const capOrder = chaptersData.map(c => c.titulo);
+    const capsOrdenados = [
+      ...capOrder.filter(t => porCap[t]),
+      ...Object.keys(porCap).filter(t => !capOrder.includes(t))
+    ];
+
+    const dataHoje  = new Date().toLocaleDateString('pt-BR');
+    const totalGeral = codigos.reduce((s, cod) => s + (orcamento[cod] ? orcamento[cod].subtotal : 0), 0);
+
+    // ── Monta XML do XLSX manualmente (SpreadsheetML) ─────────────────────
+    // Formato nativo do Excel (Office Open XML) — zero dependência
+
+    const esc = s => String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+
+    // Converte número para string segura para XML
+    const num = v => {
+      const n = parseFloat(v);
+      return isNaN(n) ? 0 : n;
+    };
+
+    // Célula de texto
+    const ct = (v, bold) => {
+      const s = bold ? ' s="1"' : '';
+      return `<c t="inlineStr"${s}><is><t>${esc(v||'')}</t></is></c>`;
+    };
+    // Célula numérica
+    const cn = (v, bold) => {
+      const s = bold ? ' s="2"' : '';
+      return `<c${s}><v>${num(v)}</v></c>`;
+    };
+    // Linha vazia
+    const rowEmpty = () => `<row><c t="inlineStr"><is><t></t></is></c></row>`;
+
+    // Monta as linhas da planilha
+    let sheetRows = '';
+    let rowIdx = 1;
+
+    // Título
+    sheetRows += `<row r="${rowIdx++}">${ct('ORÇAMENTO DE OBRA – OrçaMestre Pro', true)}</row>`;
+    sheetRows += `<row r="${rowIdx++}">${ct('SINAPI/SC Desonerado + CUB SINDUSCON-SC – 03/2026  |  Florianópolis/SC  |  Emissão: '+dataHoje)}</row>`;
+    sheetRows += `<row r="${rowIdx++}">${ct('')}</row>`;
+
+    // Cabeçalho das colunas
+    sheetRows += `<row r="${rowIdx++}">`
+      + ct('CÓDIGO',    true)
+      + ct('DESCRIÇÃO', true)
+      + ct('UND.',      true)
+      + ct('QTD.',      true)
+      + ct('P. UNIT.',  true)
+      + ct('SUBTOTAL',  true)
+      + `</row>`;
+
+    // Dados agrupados por capítulo
+    capsOrdenados.forEach(capTit => {
+      const itens = porCap[capTit] || [];
+      if(!itens.length) return;
+
+      sheetRows += `<row r="${rowIdx++}">${ct('')}</row>`;
+      sheetRows += `<row r="${rowIdx++}">${ct('► '+capTit, true)}</row>`;
+
+      itens.forEach(cod => {
+        const e = orcamento[cod];
+        if(!e) return;
+        const item = getItem(cod);
+        const desc = item ? item.d : e.descricao;
+        sheetRows += `<row r="${rowIdx++}">`
+          + ct(cod)
+          + ct(desc)
+          + ct(e.unidade)
+          + cn(e.qtd)
+          + cn(e.preco)
+          + cn(e.subtotal)
+          + `</row>`;
+      });
+    });
+
+    // Total geral
+    sheetRows += `<row r="${rowIdx++}">${ct('')}</row>`;
+    sheetRows += `<row r="${rowIdx++}">`
+      + ct('')+ct('')+ct('')+ct('')
+      + ct('TOTAL GERAL (R$)', true)
+      + cn(totalGeral, true)
+      + `</row>`;
+
+    // Larguras das colunas
+    const colWidths = `<cols>
+      <col min="1" max="1" width="14" customWidth="1"/>
+      <col min="2" max="2" width="60" customWidth="1"/>
+      <col min="3" max="3" width="7"  customWidth="1"/>
+      <col min="4" max="4" width="10" customWidth="1"/>
+      <col min="5" max="5" width="16" customWidth="1"/>
+      <col min="6" max="6" width="16" customWidth="1"/>
+    </cols>`;
+
+    // XML do worksheet principal
+    const wsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  ${colWidths}
+  <sheetData>${sheetRows}</sheetData>
+</worksheet>`;
+
+    // ── Aba Resumo ─────────────────────────────────────────────────────────
+    let resRows = '';
+    let ri = 1;
+    resRows += `<row r="${ri++}">${ct('RESUMO POR CAPÍTULO', true)}</row>`;
+    resRows += `<row r="${ri++}">${ct('Emissão: '+dataHoje)}</row>`;
+    resRows += `<row r="${ri++}">${ct('')}</row>`;
+    resRows += `<row r="${ri++}">${ct('CAPÍTULO',true)}${ct('ITENS',true)}${ct('SUBTOTAL (R$)',true)}</row>`;
+    capsOrdenados.forEach(capTit => {
+      const itens = porCap[capTit]||[];
+      let sub = 0;
+      itens.forEach(cod => { if(orcamento[cod]) sub += orcamento[cod].subtotal; });
+      if(itens.length){
+        resRows += `<row r="${ri++}">${ct(capTit)}${cn(itens.length)}${cn(sub)}</row>`;
+      }
+    });
+    resRows += `<row r="${ri++}">${ct('')}</row>`;
+    resRows += `<row r="${ri++}">${ct('TOTAL GERAL',true)}${ct('')}${cn(totalGeral,true)}</row>`;
+
+    const wsResXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <cols><col min="1" max="1" width="45" customWidth="1"/><col min="2" max="2" width="10" customWidth="1"/><col min="3" max="3" width="18" customWidth="1"/></cols>
+  <sheetData>${resRows}</sheetData>
+</worksheet>`;
+
+    // ── Estilos básicos (negrito) ─────────────────────────────────────────
+    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts>
+    <font><sz val="11"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><name val="Calibri"/></font>
+  </fonts>
+  <fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+  <borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>
+  </cellXfs>
+</styleSheet>`;
+
+    // ── Monta o ZIP (XLSX = ZIP com XMLs) usando JSZip inline ────────────
+    // Usa fflate (tiny, sem CDN) via função interna para criar o ZIP
+    // OU gera os arquivos como XML e usa a API nativa de Blob
+
+    // Técnica: cria o XLSX manualmente via blobs concatenados com a
+    // estrutura mínima de ZIP usando apenas ArrayBuffer + DataView
+    const enc = new TextEncoder();
+
+    function crc32(buf){
+      let c=0xFFFFFFFF;
+      const t=new Uint8Array(buf);
+      for(let i=0;i<t.length;i++){
+        c=c^t[i];
+        for(let j=0;j<8;j++) c=c&1?(c>>>1)^0xEDB88320:(c>>>1);
+      }
+      return (c^0xFFFFFFFF)>>>0;
+    }
+
+    function deflateRaw(data){
+      // Sem compressão (stored) para simplicidade e confiabilidade
+      return data;
+    }
+
+    function zipEntry(name, content){
+      const nameBytes  = enc.encode(name);
+      const dataBytes  = enc.encode(content);
+      const crc        = crc32(dataBytes);
+      const size       = dataBytes.length;
+      const local = new Uint8Array(30+nameBytes.length);
+      const dv    = new DataView(local.buffer);
+      dv.setUint32(0,  0x04034b50, true); // signature
+      dv.setUint16(4,  20, true);          // version needed
+      dv.setUint16(6,  0,  true);          // flags
+      dv.setUint16(8,  0,  true);          // compression: stored
+      dv.setUint16(10, 0,  true);          // mod time
+      dv.setUint16(12, 0,  true);          // mod date
+      dv.setUint32(14, crc,  true);        // crc32
+      dv.setUint32(18, size, true);        // compressed size
+      dv.setUint32(22, size, true);        // uncompressed size
+      dv.setUint16(26, nameBytes.length, true);
+      dv.setUint16(28, 0, true);
+      local.set(nameBytes, 30);
+      return { local, data: dataBytes, name: nameBytes, crc, size };
+    }
+
+    function buildZip(entries){
+      const parts = [];
+      const centralDir = [];
+      let offset = 0;
+
+      entries.forEach(e => {
+        const { local, data, name, crc, size } = e;
+        centralDir.push({ name, crc, size, offset });
+        parts.push(local);
+        parts.push(data);
+        offset += local.length + data.length;
+      });
+
+      const cdStart = offset;
+      centralDir.forEach(({ name, crc, size, offset: loff }) => {
+        const cd = new Uint8Array(46 + name.length);
+        const dv = new DataView(cd.buffer);
+        dv.setUint32(0,  0x02014b50, true);
+        dv.setUint16(4,  20, true);
+        dv.setUint16(6,  20, true);
+        dv.setUint16(8,  0,  true);
+        dv.setUint16(10, 0,  true);
+        dv.setUint16(12, 0,  true);
+        dv.setUint16(14, 0,  true);
+        dv.setUint32(16, crc,  true);
+        dv.setUint32(20, size, true);
+        dv.setUint32(24, size, true);
+        dv.setUint16(28, name.length, true);
+        dv.setUint16(30, 0, true);
+        dv.setUint16(32, 0, true);
+        dv.setUint16(34, 0, true);
+        dv.setUint16(36, 0, true);
+        dv.setUint32(38, 0, true);
+        dv.setUint32(42, loff, true);
+        cd.set(name, 46);
+        parts.push(cd);
+        offset += cd.length;
+      });
+
+      const eocd = new Uint8Array(22);
+      const eDv  = new DataView(eocd.buffer);
+      eDv.setUint32(0,  0x06054b50, true);
+      eDv.setUint16(4,  0, true);
+      eDv.setUint16(6,  0, true);
+      eDv.setUint16(8,  centralDir.length, true);
+      eDv.setUint16(10, centralDir.length, true);
+      eDv.setUint32(12, offset - cdStart, true);
+      eDv.setUint32(16, cdStart, true);
+      eDv.setUint16(20, 0, true);
+      parts.push(eocd);
+
+      const total = parts.reduce((s,p)=>s+p.length,0);
+      const out   = new Uint8Array(total);
+      let pos = 0;
+      parts.forEach(p=>{ out.set(p,pos); pos+=p.length; });
+      return out;
+    }
+
+    // Arquivos obrigatórios do XLSX
+    const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml"  ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml"              ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml"     ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet2.xml"     ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml"                ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+    const relsRoot = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+    const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Orçamento" sheetId="1" r:id="rId1"/>
+    <sheet name="Resumo"    sheetId="2" r:id="rId2"/>
+  </sheets>
+</workbook>`;
+
+    const relsWb = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"    Target="styles.xml"/>
+</Relationships>`;
+
+    const entries = [
+      zipEntry('[Content_Types].xml',          contentTypes),
+      zipEntry('_rels/.rels',                  relsRoot),
+      zipEntry('xl/workbook.xml',              workbook),
+      zipEntry('xl/_rels/workbook.xml.rels',   relsWb),
+      zipEntry('xl/styles.xml',                stylesXml),
+      zipEntry('xl/worksheets/sheet1.xml',     wsXml),
+      zipEntry('xl/worksheets/sheet2.xml',     wsResXml),
+    ];
+
+    const zipBytes = buildZip(entries);
+    const blob = new Blob([zipBytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    const dataHojeFile = dataHoje.replace(/\//g, '-');
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = 'Orcamento_' + dataHojeFile + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    showToast('Excel exportado! (' + codigos.length + ' itens)', true);
+
+  } catch(err){
+    console.error('Erro exportarExcel:', err);
+    showToast('Erro: ' + err.message);
+  }
+}
+
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')fecharBusca();});
+document.getElementById('modal-busca').addEventListener('click',e=>{if(e.target===document.getElementById('modal-busca'))fecharBusca();});
+window.onload=init;
+</script>
+</body>
+</html>
