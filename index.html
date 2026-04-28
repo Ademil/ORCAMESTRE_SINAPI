@@ -99,6 +99,47 @@
   .toast.ok{background:var(--green);}
   @keyframes flash{0%{background:rgba(56,139,253,.2);}100%{background:transparent;}}
   .flash{animation:flash 1.5s ease-out;}
+
+  /* ── Preço editável ── */
+  .price-wrap{display:flex;align-items:center;gap:5px;margin-top:2px;}
+  .price-input{
+    width:90px;background:transparent;border:none;border-bottom:1px dashed var(--border2);
+    color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
+    padding:1px 3px;outline:none;transition:all .2s;text-align:right;
+  }
+  .price-input:hover{border-bottom-color:var(--blue);}
+  .price-input:focus{
+    background:rgba(56,139,253,.08);border-bottom:1px solid var(--accent);
+    color:var(--accent);border-radius:3px;
+  }
+  .price-unit{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--text3);}
+  .price-edited{color:var(--accent)!important;}
+
+  /* ── BDI ── */
+  .bdi-wrap{
+    display:flex;align-items:center;gap:6px;
+    background:var(--surface2);border:1px solid var(--border2);
+    border-radius:6px;padding:5px 10px;
+  }
+  .bdi-label{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
+  .bdi-input{
+    width:52px;background:transparent;border:none;border-bottom:1px solid var(--border2);
+    color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
+    text-align:right;outline:none;padding:1px 3px;transition:border-color .15s;
+  }
+  .bdi-input:focus{border-bottom-color:var(--accent);}
+  .bdi-pct{font-size:12px;font-weight:700;color:var(--text3);}
+  .bdi-result{
+    display:none;flex-direction:column;align-items:flex-end;gap:1px;
+    padding-left:8px;border-left:1px solid var(--border2);
+  }
+  .bdi-result.show{display:flex;}
+  .bdi-result-label{font-size:8px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+  .bdi-result-value{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--green);}
+
+  /* header mostra os dois totais */
+  .header-total-sub{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--text3);display:none;margin-top:1px;}
+  .header-total-sub.show{display:block;}
   @media(max-width:600px){.item-row{grid-template-columns:1fr;}.item-controls{justify-content:space-between;}.header-total{display:none;}}
 </style>
 <script src="banco.js"></script>
@@ -117,6 +158,7 @@
   <div class="header-total">
     <div class="header-total-label">Total da Obra</div>
     <div class="header-total-value" id="total-geral">R$ 0,00</div>
+    <div class="header-total-sub" id="total-bdi-header">c/ BDI: R$ 0,00</div>
   </div>
 </header>
 <nav class="nav-tabs" id="nav-tabs"></nav>
@@ -127,6 +169,16 @@
     <div class="bar-total-label">Orçamento Ativo</div>
   </div>
   <div class="bar-actions">
+    <div class="bdi-wrap">
+      <span class="bdi-label">BDI</span>
+      <input type="number" class="bdi-input" id="bdi-input" min="0" max="100" step="0.1"
+        placeholder="0" oninput="updateBDI(this.value)">
+      <span class="bdi-pct">%</span>
+      <div class="bdi-result" id="bdi-result">
+        <span class="bdi-result-label">c/ BDI</span>
+        <span class="bdi-result-value" id="bdi-total-value">R$ 0,00</span>
+      </div>
+    </div>
     <button class="btn-reset" onclick="limparTudo()">Reiniciar</button>
     <button class="btn-excel" onclick="exportarExcel()">📊 Excel</button>
     <button class="btn-export" onclick="exportarPDF()">📄 PDF</button>
@@ -318,7 +370,51 @@ function getItem(cod){
 }
 
 /* ======== RENDER ======== */
-function init(){renderNav();renderChapters();updateSummary();}
+function saveState(){
+  try{
+    localStorage.setItem('orcamento_v2',    JSON.stringify(orcamento));
+    localStorage.setItem('chaptersData_v2', JSON.stringify(chaptersData));
+    const bdi=document.getElementById('bdi-input');
+    if(bdi) localStorage.setItem('bdi_v2', bdi.value||'0');
+  }catch(e){ console.warn('saveState erro:',e); }
+}
+
+function loadState(){
+  try{
+    const orcSaved = localStorage.getItem('orcamento_v2');
+    const capSaved = localStorage.getItem('chaptersData_v2');
+    const bdiSaved = localStorage.getItem('bdi_v2');
+    if(orcSaved){
+      const parsed=JSON.parse(orcSaved);
+      Object.entries(parsed).forEach(([k,v])=>{ if(v&&v.qtd>0) orcamento[k]=v; });
+    }
+    if(capSaved){
+      const parsedCaps=JSON.parse(capSaved);
+      parsedCaps.forEach(savedCap=>{
+        const cap=chaptersData.find(c=>c.id===savedCap.id);
+        if(!cap) return;
+        savedCap.subs.forEach((savedSub,si)=>{
+          if(cap.subs[si]) cap.subs[si].itens=savedSub.itens;
+        });
+      });
+    }
+    if(bdiSaved) window._bdiPendente=bdiSaved;
+  }catch(e){ console.warn('loadState erro:',e); }
+}
+
+function init(){
+  loadState();
+  renderNav();
+  renderChapters();
+  if(window._bdiPendente){
+    const bdiEl=document.getElementById('bdi-input');
+    if(bdiEl){ bdiEl.value=window._bdiPendente; updateBDI(window._bdiPendente); }
+    delete window._bdiPendente;
+  }
+  updateSummary();
+  const n=Object.keys(orcamento).length;
+  if(n>0) showToast('Orçamento restaurado ('+n+' itens)',true);
+}
 
 function renderNav(){
   const nav=document.getElementById('nav-tabs');
@@ -371,29 +467,41 @@ function renderChapters(){
 }
 
 function renderItemHTML(item,capId,subIdx){
-  const cod=item.c,desc=item.d,unit=item.u,price=item.p;
-  const entry=orcamento[cod];
-  const qty=entry?entry.qtd:'',sub=entry?entry.subtotal:0;
+  const cod=item.c,desc=item.d,unit=item.u;
+  const key=capId+"::"+subIdx+"::"+cod;
+  const domId=capId+"-"+subIdx+"-"+cod;
+  const entry=orcamento[key];
+  // Usa preço personalizado se já foi editado, caso contrário usa o original
+  const price = entry ? entry.preco : item.p;
+  const priceOrig = item.p;
+  const qty=entry?entry.qtd:'', sub=entry?entry.subtotal:0;
   const isCUB=cod.startsWith('CUB-');
-  // CUB items são fixos, sem botão de apagar
+  const edited = (price !== priceOrig) ? ' price-edited' : '';
   const deleteBtn=(!isCUB&&capId!=null)
     ?`<button class="btn-delete" title="Remover item" onclick="removerItem('${capId}',${subIdx},'${cod}')">✕</button>`
     :'';
-  return `<div class="item-row" id="row-${cod}">
+  return `<div class="item-row" id="row-${domId}">
     <div class="item-info">
       <div class="item-codigo">${cod} · ${isCUB?'CUB SINDUSCON-SC 03/2026':'SINAPI/SC 03/2026 – DESONERADO'}</div>
       <div class="item-desc">${desc}</div>
-      <div class="item-price">${fmt(price)} / ${unit}</div>
+      <div class="price-wrap">
+        <input type="number" class="price-input${edited}" id="price-${domId}"
+          title="Clique para editar o preço unitário"
+          min="0" step="0.01" value="${price}"
+          oninput="updatePrice('${key}',this.value,'${cod}','${domId}')">
+        <span class="price-unit">/ ${unit}</span>
+        ${price!==priceOrig?`<span title="Preço original SINAPI: ${fmt(priceOrig)}" style="font-size:9px;color:var(--text3);cursor:help">↺</span>`:''}
+      </div>
     </div>
     <div class="item-controls">
       <div class="qty-wrap">
         <span class="qty-label">Qtd. (${unit})</span>
         <input type="number" class="qty-input" min="0" step="0.01" placeholder="0.00"
-          value="${qty}" oninput="updateItem('${cod}',this.value,${price})">
+          value="${qty}" oninput="updateItem('${key}',this.value,${price},'${cod}')" id="qty-${domId}">
       </div>
       <div class="subtotal-wrap">
         <span class="subtotal-label">Subtotal</span>
-        <span class="subtotal-value${sub>0?' active':''}" id="sub-${cod}">${sub>0?fmt(sub):'R$ 0,00'}</span>
+        <span class="subtotal-value${sub>0?' active':''}" id="sub-${domId}">${sub>0?fmt(sub):'R$ 0,00'}</span>
       </div>
       ${deleteBtn}
     </div>
@@ -402,20 +510,78 @@ function renderItemHTML(item,capId,subIdx){
 
 function calcCapTotal(cap){
   let t=0;
-  cap.subs.forEach(s=>s.itens.forEach(cod=>{if(orcamento[cod])t+=orcamento[cod].subtotal;}));
+  cap.subs.forEach((sub,si)=>{
+    sub.itens.forEach(cod=>{
+      const key=cap.id+'::'+si+'::'+cod;
+      if(orcamento[key]) t+=orcamento[key].subtotal;
+    });
+  });
   return t;
 }
 
 /* ======== UPDATES ======== */
-function updateItem(cod,value,preco){
-  const qty=parseFloat(value)||0,sub=qty*preco;
+function updateItem(key,value,precoBase,cod){
+  const qty=parseFloat(value)||0;
+  // Se o item já tem preço personalizado, usa ele; caso contrário, usa precoBase
+  const precoAtual = (orcamento[key] && orcamento[key].preco!==undefined) ? orcamento[key].preco : precoBase;
+  const sub=qty*precoAtual;
   const item=getItem(cod);
-  if(qty>0) orcamento[cod]={qtd:qty,preco,subtotal:sub,descricao:item?item.d:'Item',unidade:item?item.u:'un'};
-  else delete orcamento[cod];
-  const el=document.getElementById(`sub-${cod}`);
-  if(el){el.textContent=qty>0?fmt(sub):'R$ 0,00';el.className=`subtotal-value${qty>0?' active':''}`;}
-  updateCapTotals();updateSummary();
+  if(qty>0){
+    orcamento[key]={
+      qtd:qty, preco:precoAtual, subtotal:sub,
+      descricao:item?item.d:'Item', unidade:item?item.u:'un', cod
+    };
+  } else {
+    // Mantém o preço personalizado mesmo zerado, para não perder a edição
+    if(orcamento[key]) orcamento[key].qtd=0, orcamento[key].subtotal=0;
+    else delete orcamento[key];
+    if(orcamento[key] && orcamento[key].qtd===0) delete orcamento[key];
+  }
+  const domId=key.replace(/::/g,'-');
+  const el=document.getElementById('sub-'+domId);
+  if(el){el.textContent=qty>0?fmt(sub):'R$ 0,00';el.className='subtotal-value'+(qty>0?' active':'');}
+  updateCapTotals();updateSummary();saveState();
 }
+
+function updatePrice(key, novoPreco, cod, domId){
+  const preco = parseFloat(novoPreco);
+  if(isNaN(preco) || preco < 0) return;
+  // Atualiza ou cria a entrada com o novo preço
+  if(!orcamento[key]){
+    // Item ainda sem quantidade — apenas guarda o preço para quando digitar qtd
+    orcamento[key] = { qtd:0, preco, subtotal:0,
+      descricao: getItem(cod)?getItem(cod).d:'Item',
+      unidade:   getItem(cod)?getItem(cod).u:'un', cod };
+  } else {
+    orcamento[key].preco    = preco;
+    orcamento[key].subtotal = orcamento[key].qtd * preco;
+  }
+  // Atualiza subtotal visível
+  const subEl = document.getElementById('sub-'+domId);
+  if(subEl){
+    const sub = orcamento[key].subtotal;
+    subEl.textContent = sub>0 ? fmt(sub) : 'R$ 0,00';
+    subEl.className   = 'subtotal-value' + (sub>0?' active':'');
+  }
+  // Atualiza o input de quantidade para recalcular com novo preço
+  const qtyEl = document.getElementById('qty-'+domId);
+  if(qtyEl && qtyEl.value) {
+    updateItem(key, qtyEl.value, preco, cod);
+    return; // updateItem já chama updateCapTotals+updateSummary
+  }
+  // Destaca o preço como editado
+  const priceEl = document.getElementById('price-'+domId);
+  const origItem = getItem(cod);
+  if(priceEl && origItem){
+    if(Math.abs(preco - origItem.p) > 0.001){
+      priceEl.classList.add('price-edited');
+    } else {
+      priceEl.classList.remove('price-edited');
+    }
+  }
+  updateCapTotals(); updateSummary(); saveState();
+}
+
 
 function updateCapTotals(){
   chaptersData.forEach(cap=>{
@@ -425,12 +591,38 @@ function updateCapTotals(){
 }
 
 function updateSummary(){
-  const items=Object.values(orcamento);
-  const total=items.reduce((s,i)=>s+i.subtotal,0),count=items.length;
+  const entries=Object.values(orcamento);
+  const total=entries.reduce((s,e)=>s+e.subtotal,0);
+  const count=entries.length;
   document.getElementById('total-geral').textContent=fmt(total);
   document.getElementById('bar-count').innerHTML=count>0
     ?`<strong>${count}</strong> ${count===1?'item quantificado':'itens quantificados'}`
     :'Nenhum item quantificado';
+  // Atualiza BDI com o novo total
+  const bdiPct=parseFloat(document.getElementById('bdi-input')?.value)||0;
+  aplicarBDI(total, bdiPct);
+}
+
+function updateBDI(val){
+  const entries=Object.values(orcamento);
+  const total=entries.reduce((s,e)=>s+e.subtotal,0);
+  aplicarBDI(total, parseFloat(val)||0);
+  saveState();
+}
+
+function aplicarBDI(total, pct){
+  const totalBdi = total * (1 + pct/100);
+  const bdiResult = document.getElementById('bdi-result');
+  const bdiVal    = document.getElementById('bdi-total-value');
+  const hdrSub    = document.getElementById('total-bdi-header');
+  if(pct>0){
+    if(bdiResult) { bdiResult.classList.add('show'); }
+    if(bdiVal)    { bdiVal.textContent=fmt(totalBdi); }
+    if(hdrSub)    { hdrSub.textContent='c/ BDI: '+fmt(totalBdi); hdrSub.classList.add('show'); }
+  } else {
+    if(bdiResult) { bdiResult.classList.remove('show'); }
+    if(hdrSub)    { hdrSub.classList.remove('show'); }
+  }
 }
 
 /* ======== BUSCA ======== */
@@ -490,9 +682,10 @@ function adicionarItem(cod){
   if(!sub)return;
   if(sub.itens.includes(cod)){showToast('Item já adicionado.');return;}
   sub.itens.push(cod);
-  fecharBusca();renderChapters();updateCapTotals();
+  fecharBusca();renderChapters();updateCapTotals();saveState();
   setTimeout(()=>{
-    const el=document.getElementById(`row-${cod}`);
+    const domId=capId+'-'+subIdx+'-'+cod;
+    const el=document.getElementById('row-'+domId);
     if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1500);}
   },120);
   showToast('Item adicionado!',true);
@@ -505,7 +698,16 @@ function removerItem(capId,subIdx,cod){
   if(!sub)return;
 
   // Animação de saída
-  const row=document.getElementById('row-'+cod);
+  const key=capId+'::'+subIdx+'::'+cod;
+  const domId=capId+'-'+subIdx+'-'+cod;
+  const row=document.getElementById('row-'+domId);
+  const doRemove=()=>{
+    sub.itens=sub.itens.filter(c=>c!==cod);
+    delete orcamento[key];
+    updateCapTotals();
+    updateSummary();
+    saveState();
+  };
   if(row){
     row.style.transition='all .2s ease';
     row.style.opacity='0';
@@ -513,40 +715,46 @@ function removerItem(capId,subIdx,cod){
     row.style.transformOrigin='top';
     row.style.maxHeight=row.offsetHeight+'px';
     row.style.overflow='hidden';
-    setTimeout(()=>{
-      // Remove do state e do capítulo
-      sub.itens=sub.itens.filter(c=>c!==cod);
-      delete orcamento[cod];
-      row.remove();
-      updateCapTotals();
-      updateSummary();
-    },200);
-  } else {
-    sub.itens=sub.itens.filter(c=>c!==cod);
-    delete orcamento[cod];
-    updateCapTotals();
-    updateSummary();
-  }
+    setTimeout(()=>{ doRemove(); row.remove(); },200);
+  } else { doRemove(); }
 }
 
 /* ======== UTILS ======== */
 function fmt(v){return`R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;}
 function scrollToSection(id){const el=document.getElementById(id);if(!el)return;window.scrollTo({top:el.getBoundingClientRect().top+window.pageYOffset-124,behavior:'smooth'});}
-function limparTudo(){if(!confirm('Limpar todos os dados do orçamento?'))return;orcamento={};renderChapters();updateSummary();window.scrollTo({top:0,behavior:'smooth'});}
+function limparTudo(){
+  if(!confirm('Limpar todos os dados do orçamento?\nIsso apagará permanentemente todos os itens e quantidades.'))return;
+  orcamento={};
+  chaptersData.forEach(cap=>{
+    if(cap.isCUB) return;
+    cap.subs.forEach(sub=>{ sub.itens=[]; });
+  });
+  localStorage.removeItem('orcamento_v2');
+  localStorage.removeItem('chaptersData_v2');
+  localStorage.removeItem('bdi_v2');
+  const bdiEl=document.getElementById('bdi-input');
+  if(bdiEl){ bdiEl.value=''; updateBDI(0); }
+  renderChapters();
+  updateSummary();
+  window.scrollTo({top:0,behavior:'smooth'});
+  showToast('Orçamento limpo com sucesso.',true);
+}
 function showToast(msg,ok=false){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast${ok?' ok':''} show`;setTimeout(()=>t.className=`toast${ok?' ok':''}`,2400);}
 
 /* ======== EXPORT ======== */
 function exportarPDF(){
-  const items=Object.entries(orcamento);
+  const items=Object.values(orcamento);
   if(!items.length){showToast('Adicione quantidades antes de gerar o relatório.');return;}
-  const total=items.reduce((s,[,i])=>s+i.subtotal,0);
+  const total=items.reduce((s,i)=>s+i.subtotal,0);
+  const bdiPdf=parseFloat(document.getElementById('bdi-input')?.value)||0;
   const data=new Date().toLocaleDateString('pt-BR');
   let sections='';
   chaptersData.forEach(cap=>{
     let rows='',capTotal=0;
-    cap.subs.forEach(sub=>{
+    cap.subs.forEach((sub,si)=>{
       sub.itens.forEach(cod=>{
-        const e=orcamento[cod];if(!e)return;
+        const key=cap.id+'::'+si+'::'+cod;
+        const e=orcamento[key];if(!e)return;
         const item=getItem(cod);
         rows+='<tr><td>'+cod+'</td><td>'+(item?item.d:e.descricao)+'</td>'
           +'<td align="center">'+e.unidade+'</td>'
@@ -587,6 +795,12 @@ function exportarPDF(){
     +'.total-block{border-top:3px solid #1e40af;padding-top:14px;text-align:right;margin-top:16px;}'
     +'.total-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;}'
     +'.total-value{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;color:#1e40af;display:block;margin-top:3px;}'
+    +'.total-green{color:#1a6b3c!important;}'
+    +'.total-value-sm{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:700;color:#1e40af;}'
+    +'.total-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;}'
+    +'.bdi-row .total-label{color:#666;}'
+    +'.bdi-val{color:#888;}'
+    +'.total-label-big{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#1a1a2e;font-weight:800;}'
     +'.note{margin-top:40px;font-size:8px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:10px;line-height:1.6;}'
     +'@media print{body{padding:20px;}}'
     +'</style></head><body>'
@@ -597,11 +811,17 @@ function exportarPDF(){
     +'</div>'
     +sections
     +'<div class="total-block">'
-    +'<div class="total-label">Valor Total Estimado da Obra</div>'
-    +'<span class="total-value">'+fmt(total)+'</span>'
+    +(bdiPdf>0
+      ? '<div class="total-row"><span class="total-label">Subtotal s/ BDI</span><span class="total-value-sm">'+fmt(total)+'</span></div>'
+        +'<div class="total-row bdi-row"><span class="total-label">BDI '+bdiPdf.toFixed(1)+'%</span><span class="total-value-sm bdi-val">+ '+fmt(total*(bdiPdf/100))+'</span></div>'
+        +'<hr style="border:none;border-top:1px solid #e2e8f0;margin:8px 0">'
+        +'<div class="total-row"><span class="total-label-big">TOTAL c/ BDI</span><span class="total-value total-green">'+fmt(total*(1+bdiPdf/100))+'</span></div>'
+      : '<div class="total-label">Valor Total Estimado da Obra</div><span class="total-value">'+fmt(total)+'</span>'
+    )
     +'</div>'
     +'<div class="note">Estimativa orçamentária baseada em índices oficiais SINAPI/CEF (Florianópolis/SC, março/2026, desonerado) e CUB/SC SINDUSCON-Fpolis (NBR 12721/2006, março/2026).<br>'
-    +'Não inclui BDI, projetos executivos, taxas, aprovações, terreno, fundações especiais ou custos indiretos. Não substitui orçamento analítico assinado por responsável técnico habilitado (CREA/CAU).</div>'
+    +(bdiPdf>0 ? 'BDI aplicado: '+bdiPdf.toFixed(1)+'% sobre o subtotal. ' : 'Não inclui BDI. ')
+    +'Não substitui orçamento analítico assinado por responsável técnico habilitado (CREA/CAU).</div>'
     +'</body></html>';
 
   // window.open retorna null quando popups estao bloqueados — usa Blob como fallback
@@ -621,341 +841,313 @@ function exportarPDF(){
   }
 }
 
-/* ======== EXPORT EXCEL (sem CDN – geração nativa) ======== */
+/* ======== EXPORT EXCEL (geração nativa — sem CDN) ======== */
 function exportarExcel(){
   try{
-    // ── Valida dados ──────────────────────────────────────────────────────
-    const codigos = Object.keys(orcamento);
-    if(!codigos.length){
-      showToast('Nenhum item quantificado para exportar.');
-      return;
-    }
 
-    // ── Mapa reverso: codigo → capítulo / subcapítulo ─────────────────────
-    const mapaPos = {};
+    // ── 1. Coleta linhas na ordem dos capítulos/subcapítulos ─────────────
+    // Usa a chave composta  capId::subIdx::cod  —  isolamento total
+    const linhas = [];
     chaptersData.forEach(cap => {
-      cap.subs.forEach(sub => {
+      cap.subs.forEach((sub, si) => {
         sub.itens.forEach(cod => {
-          mapaPos[cod] = { capitulo: cap.titulo, subcapitulo: sub.nome };
+          const key = cap.id + '::' + si + '::' + cod;
+          const e   = orcamento[key];
+          if (!e) return; // item sem quantidade — ignora
+          const item = getItem(cod);
+          linhas.push({
+            cap:  cap.titulo,
+            sub:  sub.nome,
+            cod,
+            desc: item ? item.d : e.descricao,
+            und:  e.unidade,
+            qtd:  e.qtd,
+            pu:   e.preco,
+            sub_: e.subtotal,   // subtotal desta linha
+          });
         });
       });
     });
 
-    // ── Agrupa itens por capítulo (ordem dos capítulos) ───────────────────
-    const porCap = {};
-    codigos.forEach(cod => {
-      const pos = mapaPos[cod] || { capitulo: 'Outros', subcapitulo: '' };
-      if(!porCap[pos.capitulo]) porCap[pos.capitulo] = [];
-      porCap[pos.capitulo].push(cod);
-    });
-    const capOrder = chaptersData.map(c => c.titulo);
-    const capsOrdenados = [
-      ...capOrder.filter(t => porCap[t]),
-      ...Object.keys(porCap).filter(t => !capOrder.includes(t))
-    ];
+    if (!linhas.length) {
+      showToast('Nenhum item quantificado para exportar.');
+      return;
+    }
 
-    const dataHoje  = new Date().toLocaleDateString('pt-BR');
-    const totalGeral = codigos.reduce((s, cod) => s + (orcamento[cod] ? orcamento[cod].subtotal : 0), 0);
+    const dataHoje   = new Date().toLocaleDateString('pt-BR');
+    const totalGeral = linhas.reduce((s, l) => s + l.sub_, 0);
 
-    // ── Monta XML do XLSX manualmente (SpreadsheetML) ─────────────────────
-    // Formato nativo do Excel (Office Open XML) — zero dependência
+    // ── 2. Helpers XML ────────────────────────────────────────────────────
+    const esc = v => String(v == null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-    const esc = s => String(s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+    // Célula texto  (s=1 → negrito)
+    const ct = (v, bold) =>
+      `<c t="inlineStr"${bold?' s="1"':''}><is><t>${esc(v)}</t></is></c>`;
 
-    // Converte número para string segura para XML
-    const num = v => {
-      const n = parseFloat(v);
-      return isNaN(n) ? 0 : n;
-    };
-
-    // Célula de texto
-    const ct = (v, bold) => {
-      const s = bold ? ' s="1"' : '';
-      return `<c t="inlineStr"${s}><is><t>${esc(v||'')}</t></is></c>`;
-    };
-    // Célula numérica
+    // Célula numérica  (s=2 → negrito)
     const cn = (v, bold) => {
-      const s = bold ? ' s="2"' : '';
-      return `<c${s}><v>${num(v)}</v></c>`;
+      const n = parseFloat(v) || 0;
+      return `<c${bold?' s="2"':''}><v>${n}</v></c>`;
     };
-    // Linha vazia
-    const rowEmpty = () => `<row><c t="inlineStr"><is><t></t></is></c></row>`;
 
-    // Monta as linhas da planilha
+    // ── 3. Monta linhas da planilha principal ─────────────────────────────
     let sheetRows = '';
-    let rowIdx = 1;
+    let ri = 1;
 
-    // Título
-    sheetRows += `<row r="${rowIdx++}">${ct('ORÇAMENTO DE OBRA – OrçaMestre Pro', true)}</row>`;
-    sheetRows += `<row r="${rowIdx++}">${ct('SINAPI/SC Desonerado + CUB SINDUSCON-SC – 03/2026  |  Florianópolis/SC  |  Emissão: '+dataHoje)}</row>`;
-    sheetRows += `<row r="${rowIdx++}">${ct('')}</row>`;
+    // Cabeçalho do documento
+    sheetRows += `<row r="${ri++}">${ct('ORÇAMENTO DE OBRA – OrçaMestre Pro', true)}</row>`;
+    sheetRows += `<row r="${ri++}">${ct('SINAPI/SC Desonerado + CUB SINDUSCON-SC – 03/2026  |  Florianópolis/SC  |  Emissão: ' + dataHoje)}</row>`;
+    sheetRows += `<row r="${ri++}"><c t="inlineStr"><is><t></t></is></c></row>`;
 
     // Cabeçalho das colunas
-    sheetRows += `<row r="${rowIdx++}">`
+    sheetRows += `<row r="${ri++}">`
       + ct('CÓDIGO',    true)
       + ct('DESCRIÇÃO', true)
       + ct('UND.',      true)
       + ct('QTD.',      true)
       + ct('P. UNIT.',  true)
       + ct('SUBTOTAL',  true)
-      + `</row>`;
+      + '</row>';
 
     // Dados agrupados por capítulo
-    capsOrdenados.forEach(capTit => {
-      const itens = porCap[capTit] || [];
-      if(!itens.length) return;
-
-      sheetRows += `<row r="${rowIdx++}">${ct('')}</row>`;
-      sheetRows += `<row r="${rowIdx++}">${ct('► '+capTit, true)}</row>`;
-
-      itens.forEach(cod => {
-        const e = orcamento[cod];
-        if(!e) return;
-        const item = getItem(cod);
-        const desc = item ? item.d : e.descricao;
-        sheetRows += `<row r="${rowIdx++}">`
-          + ct(cod)
-          + ct(desc)
-          + ct(e.unidade)
-          + cn(e.qtd)
-          + cn(e.preco)
-          + cn(e.subtotal)
-          + `</row>`;
-      });
-    });
-
-    // Total geral
-    sheetRows += `<row r="${rowIdx++}">${ct('')}</row>`;
-    sheetRows += `<row r="${rowIdx++}">`
-      + ct('')+ct('')+ct('')+ct('')
-      + ct('TOTAL GERAL (R$)', true)
-      + cn(totalGeral, true)
-      + `</row>`;
-
-    // Larguras das colunas
-    const colWidths = `<cols>
-      <col min="1" max="1" width="14" customWidth="1"/>
-      <col min="2" max="2" width="60" customWidth="1"/>
-      <col min="3" max="3" width="7"  customWidth="1"/>
-      <col min="4" max="4" width="10" customWidth="1"/>
-      <col min="5" max="5" width="16" customWidth="1"/>
-      <col min="6" max="6" width="16" customWidth="1"/>
-    </cols>`;
-
-    // XML do worksheet principal
-    const wsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  ${colWidths}
-  <sheetData>${sheetRows}</sheetData>
-</worksheet>`;
-
-    // ── Aba Resumo ─────────────────────────────────────────────────────────
-    let resRows = '';
-    let ri = 1;
-    resRows += `<row r="${ri++}">${ct('RESUMO POR CAPÍTULO', true)}</row>`;
-    resRows += `<row r="${ri++}">${ct('Emissão: '+dataHoje)}</row>`;
-    resRows += `<row r="${ri++}">${ct('')}</row>`;
-    resRows += `<row r="${ri++}">${ct('CAPÍTULO',true)}${ct('ITENS',true)}${ct('SUBTOTAL (R$)',true)}</row>`;
-    capsOrdenados.forEach(capTit => {
-      const itens = porCap[capTit]||[];
-      let sub = 0;
-      itens.forEach(cod => { if(orcamento[cod]) sub += orcamento[cod].subtotal; });
-      if(itens.length){
-        resRows += `<row r="${ri++}">${ct(capTit)}${cn(itens.length)}${cn(sub)}</row>`;
+    let capAtual = '';
+    linhas.forEach(l => {
+      if (l.cap !== capAtual) {
+        capAtual = l.cap;
+        sheetRows += `<row r="${ri++}"><c t="inlineStr"><is><t></t></is></c></row>`;
+        sheetRows += `<row r="${ri++}">${ct('► ' + l.cap, true)}</row>`;
       }
+      sheetRows += `<row r="${ri++}">`
+        + ct(l.cod)
+        + ct(l.desc)
+        + ct(l.und)
+        + cn(l.qtd)
+        + cn(l.pu)
+        + cn(l.sub_)
+        + '</row>';
     });
-    resRows += `<row r="${ri++}">${ct('')}</row>`;
-    resRows += `<row r="${ri++}">${ct('TOTAL GERAL',true)}${ct('')}${cn(totalGeral,true)}</row>`;
 
-    const wsResXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <cols><col min="1" max="1" width="45" customWidth="1"/><col min="2" max="2" width="10" customWidth="1"/><col min="3" max="3" width="18" customWidth="1"/></cols>
-  <sheetData>${resRows}</sheetData>
-</worksheet>`;
+    // Total geral + BDI
+    const bdiXls=parseFloat(document.getElementById('bdi-input')?.value)||0;
+    sheetRows += `<row r="${ri++}"><c t="inlineStr"><is><t></t></is></c></row>`;
+    sheetRows += `<row r="${ri++}">`
+      + ct('') + ct('') + ct('') + ct('')
+      + ct('TOTAL GERAL s/ BDI (R$)', true)
+      + cn(totalGeral, true)
+      + '</row>';
+    if(bdiXls>0){
+      sheetRows += `<row r="${ri++}">`
+        + ct('') + ct('') + ct('') + ct('')
+        + ct('BDI '+bdiXls.toFixed(1)+'%', true)
+        + cn(totalGeral*(bdiXls/100), true)
+        + '</row>';
+      sheetRows += `<row r="${ri++}">`
+        + ct('') + ct('') + ct('') + ct('')
+        + ct('TOTAL c/ BDI (R$)', true)
+        + cn(totalGeral*(1+bdiXls/100), true)
+        + '</row>';
+    }
 
-    // ── Estilos básicos (negrito) ─────────────────────────────────────────
-    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts>
-    <font><sz val="11"/><name val="Calibri"/></font>
-    <font><b/><sz val="11"/><name val="Calibri"/></font>
-  </fonts>
-  <fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
-  <borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>
-  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>
-  </cellXfs>
-</styleSheet>`;
+    // ── 4. Worksheet principal XML ────────────────────────────────────────
+    const wsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<cols>'
+      + '<col min="1" max="1" width="14" customWidth="1"/>'
+      + '<col min="2" max="2" width="60" customWidth="1"/>'
+      + '<col min="3" max="3" width="7"  customWidth="1"/>'
+      + '<col min="4" max="4" width="10" customWidth="1"/>'
+      + '<col min="5" max="5" width="16" customWidth="1"/>'
+      + '<col min="6" max="6" width="16" customWidth="1"/>'
+      + '</cols>'
+      + '<sheetData>' + sheetRows + '</sheetData>'
+      + '</worksheet>';
 
-    // ── Monta o ZIP (XLSX = ZIP com XMLs) usando JSZip inline ────────────
-    // Usa fflate (tiny, sem CDN) via função interna para criar o ZIP
-    // OU gera os arquivos como XML e usa a API nativa de Blob
+    // ── 5. Aba Resumo ─────────────────────────────────────────────────────
+    let resRows = '';
+    let rri = 1;
+    resRows += `<row r="${rri++}">${ct('RESUMO POR CAPÍTULO', true)}</row>`;
+    resRows += `<row r="${rri++}">${ct('Emissão: ' + dataHoje)}</row>`;
+    resRows += `<row r="${rri++}"><c t="inlineStr"><is><t></t></is></c></row>`;
+    resRows += `<row r="${rri++}">${ct('CAPÍTULO',true)}${ct('ITENS',true)}${ct('SUBTOTAL (R$)',true)}</row>`;
 
-    // Técnica: cria o XLSX manualmente via blobs concatenados com a
-    // estrutura mínima de ZIP usando apenas ArrayBuffer + DataView
+    // Agrupa por capítulo para o resumo
+    const resCaps = {};
+    linhas.forEach(l => {
+      if (!resCaps[l.cap]) resCaps[l.cap] = { n: 0, sub: 0 };
+      resCaps[l.cap].n++;
+      resCaps[l.cap].sub += l.sub_;
+    });
+    chaptersData.forEach(cap => {
+      const r = resCaps[cap.titulo];
+      if (r) resRows += `<row r="${rri++}">${ct(cap.titulo)}${cn(r.n)}${cn(r.sub)}</row>`;
+    });
+    resRows += `<row r="${rri++}"><c t="inlineStr"><is><t></t></is></c></row>`;
+    resRows += `<row r="${rri++}">${ct('TOTAL GERAL', true)}${ct('')}${cn(totalGeral, true)}</row>`;
+
+    const wsResXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<cols>'
+      + '<col min="1" max="1" width="45" customWidth="1"/>'
+      + '<col min="2" max="2" width="10" customWidth="1"/>'
+      + '<col min="3" max="3" width="18" customWidth="1"/>'
+      + '</cols>'
+      + '<sheetData>' + resRows + '</sheetData>'
+      + '</worksheet>';
+
+    // ── 6. Estilos (fonte normal + negrito) ───────────────────────────────
+    const stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<fonts>'
+      + '<font><sz val="11"/><name val="Calibri"/></font>'
+      + '<font><b/><sz val="11"/><name val="Calibri"/></font>'
+      + '</fonts>'
+      + '<fills><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
+      + '<borders><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+      + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+      + '<cellXfs>'
+      + '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'  // s=0 normal
+      + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>'  // s=1 negrito texto
+      + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0"/>'  // s=2 negrito número
+      + '</cellXfs>'
+      + '</styleSheet>';
+
+    // ── 7. Arquivos estruturais do XLSX (Office Open XML) ─────────────────
+    const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+      + '<Default Extension="xml"  ContentType="application/xml"/>'
+      + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+      + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+      + '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+      + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+      + '</Types>';
+
+    const relsRoot = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+      + '</Relationships>';
+
+    const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+      + '<sheets>'
+      + '<sheet name="Orçamento" sheetId="1" r:id="rId1"/>'
+      + '<sheet name="Resumo"    sheetId="2" r:id="rId2"/>'
+      + '</sheets>'
+      + '</workbook>';
+
+    const relsWb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+      + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+      + '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>'
+      + '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"    Target="styles.xml"/>'
+      + '</Relationships>';
+
+    // ── 8. Gerador de ZIP (sem dependências) ──────────────────────────────
     const enc = new TextEncoder();
 
-    function crc32(buf){
-      let c=0xFFFFFFFF;
-      const t=new Uint8Array(buf);
-      for(let i=0;i<t.length;i++){
-        c=c^t[i];
-        for(let j=0;j<8;j++) c=c&1?(c>>>1)^0xEDB88320:(c>>>1);
-      }
-      return (c^0xFFFFFFFF)>>>0;
+    function crc32(buf) {
+      let c = 0xFFFFFFFF;
+      for (let b of buf) { c ^= b; for (let j = 0; j < 8; j++) c = c & 1 ? (c >>> 1) ^ 0xEDB88320 : c >>> 1; }
+      return (c ^ 0xFFFFFFFF) >>> 0;
     }
 
-    function deflateRaw(data){
-      // Sem compressão (stored) para simplicidade e confiabilidade
-      return data;
-    }
-
-    function zipEntry(name, content){
-      const nameBytes  = enc.encode(name);
-      const dataBytes  = enc.encode(content);
-      const crc        = crc32(dataBytes);
-      const size       = dataBytes.length;
-      const local = new Uint8Array(30+nameBytes.length);
+    function makeEntry(name, content) {
+      const nameB = enc.encode(name);
+      const dataB = enc.encode(content);
+      const crc   = crc32(dataB);
+      const size  = dataB.length;
+      const local = new Uint8Array(30 + nameB.length);
       const dv    = new DataView(local.buffer);
-      dv.setUint32(0,  0x04034b50, true); // signature
-      dv.setUint16(4,  20, true);          // version needed
-      dv.setUint16(6,  0,  true);          // flags
-      dv.setUint16(8,  0,  true);          // compression: stored
-      dv.setUint16(10, 0,  true);          // mod time
-      dv.setUint16(12, 0,  true);          // mod date
-      dv.setUint32(14, crc,  true);        // crc32
-      dv.setUint32(18, size, true);        // compressed size
-      dv.setUint32(22, size, true);        // uncompressed size
-      dv.setUint16(26, nameBytes.length, true);
+      dv.setUint32( 0, 0x04034b50, true);  // local file header sig
+      dv.setUint16( 4, 20, true);           // version needed
+      dv.setUint16( 6, 0,  true);           // flags
+      dv.setUint16( 8, 0,  true);           // compression: STORED
+      dv.setUint16(10, 0,  true);           // mod time
+      dv.setUint16(12, 0,  true);           // mod date
+      dv.setUint32(14, crc,  true);
+      dv.setUint32(18, size, true);
+      dv.setUint32(22, size, true);
+      dv.setUint16(26, nameB.length, true);
       dv.setUint16(28, 0, true);
-      local.set(nameBytes, 30);
-      return { local, data: dataBytes, name: nameBytes, crc, size };
+      local.set(nameB, 30);
+      return { local, data: dataB, name: nameB, crc, size };
     }
 
-    function buildZip(entries){
+    function buildZip(entries) {
       const parts = [];
-      const centralDir = [];
-      let offset = 0;
-
+      const cdirs = [];
+      let offset  = 0;
       entries.forEach(e => {
-        const { local, data, name, crc, size } = e;
-        centralDir.push({ name, crc, size, offset });
-        parts.push(local);
-        parts.push(data);
-        offset += local.length + data.length;
+        cdirs.push({ ...e, offset });
+        parts.push(e.local, e.data);
+        offset += e.local.length + e.data.length;
       });
-
       const cdStart = offset;
-      centralDir.forEach(({ name, crc, size, offset: loff }) => {
+      cdirs.forEach(({ name, crc, size, offset: loff }) => {
         const cd = new Uint8Array(46 + name.length);
         const dv = new DataView(cd.buffer);
-        dv.setUint32(0,  0x02014b50, true);
-        dv.setUint16(4,  20, true);
-        dv.setUint16(6,  20, true);
-        dv.setUint16(8,  0,  true);
-        dv.setUint16(10, 0,  true);
-        dv.setUint16(12, 0,  true);
-        dv.setUint16(14, 0,  true);
+        dv.setUint32( 0, 0x02014b50, true);
+        dv.setUint16( 4, 20, true); dv.setUint16( 6, 20, true);
+        dv.setUint16( 8, 0,  true); dv.setUint16(10, 0,  true);
+        dv.setUint16(12, 0,  true); dv.setUint16(14, 0,  true);
         dv.setUint32(16, crc,  true);
         dv.setUint32(20, size, true);
         dv.setUint32(24, size, true);
         dv.setUint16(28, name.length, true);
-        dv.setUint16(30, 0, true);
-        dv.setUint16(32, 0, true);
-        dv.setUint16(34, 0, true);
-        dv.setUint16(36, 0, true);
-        dv.setUint32(38, 0, true);
+        dv.setUint16(30, 0, true); dv.setUint16(32, 0, true);
+        dv.setUint16(34, 0, true); dv.setUint16(36, 0, true);
+        dv.setUint32(38, 0,    true);
         dv.setUint32(42, loff, true);
         cd.set(name, 46);
         parts.push(cd);
         offset += cd.length;
       });
-
       const eocd = new Uint8Array(22);
-      const eDv  = new DataView(eocd.buffer);
-      eDv.setUint32(0,  0x06054b50, true);
-      eDv.setUint16(4,  0, true);
-      eDv.setUint16(6,  0, true);
-      eDv.setUint16(8,  centralDir.length, true);
-      eDv.setUint16(10, centralDir.length, true);
-      eDv.setUint32(12, offset - cdStart, true);
-      eDv.setUint32(16, cdStart, true);
-      eDv.setUint16(20, 0, true);
+      const ev   = new DataView(eocd.buffer);
+      ev.setUint32( 0, 0x06054b50, true);
+      ev.setUint16( 4, 0, true); ev.setUint16( 6, 0, true);
+      ev.setUint16( 8, cdirs.length, true);
+      ev.setUint16(10, cdirs.length, true);
+      ev.setUint32(12, offset - cdStart, true);
+      ev.setUint32(16, cdStart, true);
+      ev.setUint16(20, 0, true);
       parts.push(eocd);
-
-      const total = parts.reduce((s,p)=>s+p.length,0);
+      const total = parts.reduce((s, p) => s + p.length, 0);
       const out   = new Uint8Array(total);
-      let pos = 0;
-      parts.forEach(p=>{ out.set(p,pos); pos+=p.length; });
+      let   pos   = 0;
+      parts.forEach(p => { out.set(p, pos); pos += p.length; });
       return out;
     }
 
-    // Arquivos obrigatórios do XLSX
-    const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml"  ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml"              ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml"     ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/worksheets/sheet2.xml"     ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml"                ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`;
+    // ── 9. Monta e baixa ──────────────────────────────────────────────────
+    const zipBytes = buildZip([
+      makeEntry('[Content_Types].xml',        contentTypes),
+      makeEntry('_rels/.rels',                relsRoot),
+      makeEntry('xl/workbook.xml',            workbook),
+      makeEntry('xl/_rels/workbook.xml.rels', relsWb),
+      makeEntry('xl/styles.xml',              stylesXml),
+      makeEntry('xl/worksheets/sheet1.xml',   wsXml),
+      makeEntry('xl/worksheets/sheet2.xml',   wsResXml),
+    ]);
 
-    const relsRoot = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`;
-
-    const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets>
-    <sheet name="Orçamento" sheetId="1" r:id="rId1"/>
-    <sheet name="Resumo"    sheetId="2" r:id="rId2"/>
-  </sheets>
-</workbook>`;
-
-    const relsWb = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
-  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"    Target="styles.xml"/>
-</Relationships>`;
-
-    const entries = [
-      zipEntry('[Content_Types].xml',          contentTypes),
-      zipEntry('_rels/.rels',                  relsRoot),
-      zipEntry('xl/workbook.xml',              workbook),
-      zipEntry('xl/_rels/workbook.xml.rels',   relsWb),
-      zipEntry('xl/styles.xml',                stylesXml),
-      zipEntry('xl/worksheets/sheet1.xml',     wsXml),
-      zipEntry('xl/worksheets/sheet2.xml',     wsResXml),
-    ];
-
-    const zipBytes = buildZip(entries);
     const blob = new Blob([zipBytes], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
-
-    const dataHojeFile = dataHoje.replace(/\//g, '-');
-    const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href     = url;
-    a.download = 'Orcamento_' + dataHojeFile + '.xlsx';
+    a.download = 'Orcamento_' + dataHoje.replace(/\//g, '-') + '.xlsx';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
 
-    showToast('Excel exportado! (' + codigos.length + ' itens)', true);
+    showToast('Excel exportado! (' + linhas.length + ' itens)', true);
 
-  } catch(err){
-    console.error('Erro exportarExcel:', err);
+  } catch(err) {
+    console.error('exportarExcel erro:', err);
     showToast('Erro: ' + err.message);
   }
 }
